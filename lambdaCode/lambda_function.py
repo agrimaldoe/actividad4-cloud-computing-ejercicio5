@@ -23,6 +23,8 @@ def lambda_handler(event, context):
         students_info["final_grade"] = 0.25 * students_info["first_grade"] + 0.25 * students_info["second_grade"] + 0.25 * students_info["third_grade"] + 0.25 * students_info["fourth_grade"]
         students_info["final_grade"] = round(students_info["final_grade"], 2)
         students_info["pass"] = students_info["final_grade"] >= 6.0
+        students_info["bmi"] = students_info["weight"] / students_info["height"]**2
+        students_info["bmi"] = round(students_info["bmi"], 2)
         csv_buffer = BytesIO()
         students_info.to_csv(csv_buffer, index=False, encoding='utf-8')
         csv_buffer.seek(0)
