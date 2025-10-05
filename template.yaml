@@ -17,6 +17,8 @@ Parameters:
   StudentFunctionName:
     Type: String
     Description: Student function name.
+  CodeObjectVersion:
+    Type: String
 
 Resources:
   RawStudentBucket:
@@ -56,6 +58,7 @@ Resources:
       Code:
         S3Bucket: !Ref CodeBucketName
         S3Key: lambdaCode.zip
+        S3ObjectVersion: !Ref CodeObjectVersion
       Environment:
         Variables:
           RESULT_BUCKET_NAME: !Ref DestinationBucketName

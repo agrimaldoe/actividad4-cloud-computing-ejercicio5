@@ -1,25 +1,17 @@
 set -euo pipefail
+for v in CODE_BUCKET ROLE_ARN DEST_BUCKET TRIGGER_BUCKET FUNCTION_NAME; do : "${!v:?}"; done
 
-: "${CODE_BUCKET:?Define CODE_BUCKET en Variables de entorno}"
-: "${ROLE_ARN:?Define ROLE_ARN en Variables de entorno}"
-: "${DEST_BUCKET:?Define DEST_BUCKET en Variables de entorno}"
-: "${TRIGGER_BUCKET:?Define TRIGGER_BUCKET en Variables de entorno}"
-: "${FUNCTION_NAME:?Define FUNCTION_NAME en Variables de entorno}"
+# 1) Empaquetar
+zip -rq lambdaCode.zip lambdaCode/
 
-zip -r lambdaCode.zip lambdaCode/
-aws s3 cp lambdaCode.zip "s3://${CODE_BUCKET}/lambdaCode.zip"
+# 2) Subir y OBTENER VersionId en VER
+VER=$(aws s3api put-object \
+  --bucket "$CODE_BUCKET" \
+  --key "lambdaCode.zip" \
+  --body lambdaCode.zip \
+  --query 'VersionId' --output text)
 
-aws cloudformation validate-template --template-body file://template.yaml || true
-
+# 3) Generar params.json incluyendo CodeObjectVersion=VER
 mkdir -p output
-cat > output/params.json <<JSON
-{
-  "Parameters": {
-    "ExistingRoleArn": "${ROLE_ARN}",
-    "CodeBucketName": "${CODE_BUCKET}",
-    "DestinationBucketName": "${DEST_BUCKET}",
-    "TriggerBucketName": "${TRIGGER_BUCKET}",
-    "StudentFunctionName": "${FUNCTION_NAME}"
-  }
-}
-JSON
+printf '{"Parameters":{"ExistingRoleArn":"%s","CodeBucketName":"%s","CodeObjectVersion":"%s","DestinationBucketName":"%s","TriggerBucketName":"%s","StudentFunctionName":"%s"}}' \
+  "$ROLE_ARN" "$CODE_BUCKET" "$VER" "$DEST_BUCKET" "$TRIGGER_BUCKET" "$FUNCTION_NAME" > output/params.json
